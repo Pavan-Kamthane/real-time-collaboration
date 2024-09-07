@@ -1,45 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import io from 'socket.io-client';
+// import './style.css'; // Ensure this path is correct
+import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:4000');  // Connect to backend server
+const Chat = () => {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
 
-function Chat() {
-  const [message, setMessage] = useState('');
-  const [chat, setChat] = useState([]);
-
-  // Listen for incoming messages
-  useEffect(() => {
-    socket.on('message', (msg) => {
-      setChat((prevChat) => [...prevChat, msg]);
-    });
-  }, []);
-
-  // Send message to server
-  const sendMessage = (e) => {
-    e.preventDefault();
-    socket.emit('message', message);
-    setMessage('');  // Clear input after sending
+  const handleSend = () => {
+    if (input.trim()) {
+      setMessages([...messages, { text: input, fromMe: true }]);
+      setInput('');
+    }
   };
 
+  useEffect(() => {
+    // This is where you would typically set up a WebSocket connection to receive messages.
+    // For example:
+    const socket = io('http://localhost:4000');
+    socket.on('message', (message) => {
+      setMessages((prevMessages) => [...prevMessages, { text: message, fromMe: false }]);
+    });
+
+    // Cleanup code if needed
+    return () => socket.disconnect();
+  }, []);
+
   return (
-    <div>
-      <h2>Chat Room</h2>
-      <div className="chat-box">
-        {chat.map((msg, index) => (
-          <p key={index}>{msg}</p>
+    <div className="chat-area">
+      <div className="chat-messages">
+        {messages.map((msg, index) => (
+          <div
+            key={index}
+            className={`message ${msg.fromMe ? 'from-me' : 'from-others'}`}
+          >
+            {msg.text}
+          </div>
         ))}
       </div>
-      <form onSubmit={sendMessage}>
+      <div className="chat-input">
         <input
           type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a message"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type a message..."
         />
-        <button type="submit">Send</button>
-      </form>
+        <button onClick={handleSend}>Send</button>
+      </div>
     </div>
   );
-}
+};
 
 export default Chat;
